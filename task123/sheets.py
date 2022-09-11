@@ -3,10 +3,12 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 import os.path
+import requests
+from datetime import datetime
+import xml.etree.ElementTree as ET
 
 
 class GoogleSheet:
-    TITLE_NAME = 'test_list!A1:D1'
     RANGE_NAME = 'test_list!A2:D100000000'
     SPREADSHEET_ID = '1edkilV72I8LS0M2y-xcQTAsBWejvDS5xzkFljIs_yos'
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
@@ -31,16 +33,24 @@ class GoogleSheet:
 
         self.service = build('sheets', 'v4', credentials=creds)
 
-    def get_title(self):
-        sheet = self.service.spreadsheets()
-        result = sheet.values().get(spreadsheetId=self.SPREADSHEET_ID,
-                                    range=self.TITLE_NAME).execute()
-        values = result.get('values', [])
-        return values
+    def get_exchange_rate(self):
+        url = f'https://www.cbr.ru/scripts/XML_daily.asp?date_req={datetime.today().strftime("%d/%m/%Y")}'
+        response = requests.get(url)
+        tree = ET.fromstring(response.content)
+        unit_rate = None
+        for rate in tree.findall("./Valute[@ID='R01235']/Value"):
+            unit_rate = rate.text
+        return unit_rate.replace(',', '.')
 
-    def get_values(self):
+    def get_data(self):
+        data = []
         sheet = self.service.spreadsheets()
         result = sheet.values().get(spreadsheetId=self.SPREADSHEET_ID,
                                     range=self.RANGE_NAME).execute()
-        values = result.get('values', [])
-        return values
+        values = tuple(result.get('values', []))
+        for money in values:
+            rate = float(money[2]) * float(self.get_exchange_rate())
+            money.append(round(rate, 1))
+            data.append(tuple(money))
+        return tuple(data)
+

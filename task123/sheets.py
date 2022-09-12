@@ -8,7 +8,7 @@ from datetime import datetime
 import xml.etree.ElementTree as ET
 
 
-class GoogleSheet:
+class Sheets:
     RANGE_NAME = 'test_list!A2:D100000000'
     SPREADSHEET_ID = '1edkilV72I8LS0M2y-xcQTAsBWejvDS5xzkFljIs_yos'
     SCOPES = ['https://www.googleapis.com/auth/spreadsheets']
